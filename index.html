@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>タイピングゲーム</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/earlyaccess/nicomoji.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+</head>
+
+<body>
+    <div id="game">
+        <h1>バカチン<span>★</span>タイピング</h1>
+        <input type="text" id="playerName" placeholder="プレイヤー名を入力">
+        <button id="startButton">START</button>
+        <div id="timer">制限時間1:00</div>
+        <div id="wordImageContainer">
+            <img id="wordImage" src="./image/bakachinga.png" alt="Word Image"
+                style="max-width: 300px; height: auto; margin: 20px;">
+        </div>
+        <div id="wordDisplay"></div>
+        <input type="text" id="wordInput" placeholder="ここに全力タイプ！" disabled>
+        <div id="message"></div>
+        <div id="scoreDisplay">スコア: 0pt</div>
+        <button id="endButton" disabled>END</button>
+        <!-- ゲーム終了時のポップアップ表示 -->
+        <div id="gameOverPopup" style="display: none;">
+            <h2>結果発表！</h2>
+            <p id="playerRank"></p>
+            <p id="finalScore"></p>
+            <p><img id="endImage" src="" alt="End Image" style="max-width: 300px; height: auto; margin: 20px;"></p>
+            <button onclick="$('#gameOverPopup').hide()">CLOSE</button>
+        </div>
+        <!-- 過去スコア表示 -->
+        <div id="highScores" class="scrollableContainer"></div>
+    </div>
+
+    <audio id="gameMusic" src="./audio/bakachinga-song.m4a" type="audio/mpeg"></audio>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            let score = 0;
+            let highScores = JSON.parse(localStorage.getItem('highScores')) || [];
+            let timer;
+            let timeRemaining = 60;
+
+            const words = [
+                { word: "前を向け", imageUrl: "image\\230914_001.jpg" },
+                { word: "すべてはうまくいっている", imageUrl: "image\\230914_003.jpg" },
+                { word: "根拠のない自信をもて", imageUrl: "image\\230914_005.jpg" },
+                { word: "才能より情熱ばい", imageUrl: "image\\230914_006.jpg" },
+                { word: "ほんの一瞬ばい", imageUrl: "image\\230920_002.jpg" },
+                { word: "必要な敗北を積み重ねろ", imageUrl: "image\\230920_003.jpg" },
+                { word: "夢中で探せ", imageUrl: "image\\230922_002.jpg" },
+                { word: "真面目に考えすぎるな", imageUrl: "image\\230922_001.jpg" },
+                { word: "ダメ元でいけよ", imageUrl: "image\\230922_003.jpg" },
+                { word: "心配無用", imageUrl: "image\\230927_001.jpg" },
+            ];
+
+            $("#startButton").click(function () {
+                let playerName = $("#playerName").val();
+                if (!playerName) {
+                    alert("名前を入力せんか、バカチンガー！");
+                    return;
+                }
+                startGame(playerName);
+            });
+
+            $("#endButton").click(function () {
+                endGame();
+            });
+
+            $("#wordInput").keyup(function () {
+                if ($(this).val() === currentWord) {
+                    score++;
+                    $("#scoreDisplay").text(`スコア: ${score}pt`);
+                    $("#message").text("Good!");
+                    showNewWord();
+                } else {
+                    $("#message").text("");
+                }
+            });
+
+            function showNewWord() {
+                const randomIndex = Math.floor(Math.random() * words.length);
+                currentWord = words[randomIndex].word;
+                $("#wordDisplay").text(currentWord);
+                $("#wordImage").attr("src", words[randomIndex].imageUrl);
+                $("#wordInput").val('');
+            }
+
+            function startGame(playerName) {
+                score = 0;
+                timeRemaining = 60;
+                $("#scoreDisplay").text(`スコア: ${score}pt`);
+                $("#timer").text("1:00");
+                $("#wordInput").prop('disabled', false);
+                $("#endButton").prop('disabled', false);
+                $("#playerName").prop('disabled', true);
+                $("#startButton").prop('disabled', true);
+                timer = setInterval(updateTimer, 1000);
+                showNewWord();
+                $('#gameMusic')[0].play();
+            }
+
+            function endGame() {
+                clearInterval(timer);
+                const currentDate = new Date().toLocaleString();
+                const playerScore = { name: $("#playerName").val(), score: score, date: currentDate };
+                highScores.push(playerScore);
+                highScores.sort((a, b) => b.score - a.score);
+                localStorage.setItem('highScores', JSON.stringify(highScores));
+                displayHighScores();
+                $("#wordInput").prop('disabled', true);
+                $("#endButton").prop('disabled', true);
+                $("#playerName").prop('disabled', false);
+                $("#startButton").prop('disabled', false);
+                // プレイヤーの順位を取得
+                const playerRank = highScores.findIndex(s => s.name === playerScore.name && s.score === playerScore.score && s.date === playerScore.date) + 1;
+                showGameOverPopup(playerRank); // ポップアップ表示の関数を呼び出し
+                $('#gameMusic')[0].pause();
+                $('#gameMusic')[0].currentTime = 0; // 再生位置を最初に戻す
+            }
+
+            function updateTimer() {
+                timeRemaining--;
+                let minutes = Math.floor(timeRemaining / 60);
+                let seconds = timeRemaining % 60;
+                $("#timer").text(`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+                if (timeRemaining <= 0) {
+                    endGame();
+                }
+            }
+
+            function displayHighScores() {
+                let output = "<h3> バカチン<span>★</span>ランキング </h3>";
+                highScores.forEach((score, index) => {
+                    output += `<p>${index + 1}. ${score.name} | ${score.score}pt | ${score.date}</p>`;
+                });
+                $("#highScores").html(output);
+            }
+
+             //ゲーム終了時のポップアップ表示関数
+            function showGameOverPopup(rank) {
+                $("#finalScore").text(`スコア: ${score}pt`);
+                $("#playerRank").text(`ランキング: ${rank}位`);
+                $("#endImage").attr("src", "image\\timeup.png"); 
+                $("#gameOverPopup").show();
+            }
+        });
+    </script>
+
+</body>
+
+</html>
