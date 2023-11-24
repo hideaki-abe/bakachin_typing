@@ -10,19 +10,32 @@
 </head>
 
 <body>
+
     <div id="game">
+        <!-- タイトル -->
         <h1>バカチン<span>★</span>タイピング</h1>
+        <!-- プレイヤー名入力 -->
         <input type="text" id="playerName" placeholder="プレイヤー名を入力">
+        <!-- STARTボタン -->
         <button id="startButton">START</button>
+        <!-- 制限時間表示 -->
         <div id="timer">制限時間1:00</div>
+
+        <!-- イメージ画像表示 -->
         <div id="wordImageContainer">
             <img id="wordImage" src="./image/bakachinga.png" alt="Word Image"
                 style="max-width: 300px; height: auto; margin: 20px;">
         </div>
+        <!-- 問題表示 -->
         <div id="wordDisplay"></div>
+
+        <!-- タイピング枠 -->
         <input type="text" id="wordInput" placeholder="ここに全力タイプ！" disabled>
+        <!-- タイピング結果メッセージ -->
         <div id="message"></div>
+        <!-- スコア表示 -->
         <div id="scoreDisplay">スコア: 0pt</div>
+        <!-- ENDボタン -->
         <button id="endButton" disabled>END</button>
         <!-- ゲーム終了時のポップアップ表示 -->
         <div id="gameOverPopup" style="display: none;">
@@ -36,16 +49,21 @@
         <div id="highScores" class="scrollableContainer"></div>
     </div>
 
+    <!-- バックミュージック -->
     <audio id="gameMusic" src="./audio/bakachinga-song.m4a" type="audio/mpeg"></audio>
+    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
+
     <script>
+
         $(document).ready(function () {
             let score = 0;
-            let highScores = JSON.parse(localStorage.getItem('highScores')) || [];
+            let highScores = JSON.parse(localStorage.getItem('highScores')) || []; //localStorageからスコアデータ取得
             let timer;
             let timeRemaining = 60;
 
+            //問題テキスト＆バカチンガー画像
             const words = [
                 { word: "前を向け", imageUrl: "image\\230914_001.jpg" },
                 { word: "すべてはうまくいっている", imageUrl: "image\\230914_003.jpg" },
@@ -59,30 +77,34 @@
                 { word: "心配無用", imageUrl: "image\\230927_001.jpg" },
             ];
 
+            //名前入力＆STARTボタンクリックでゲームスタート関数実行
             $("#startButton").click(function () {
                 let playerName = $("#playerName").val();
                 if (!playerName) {
-                    alert("名前を入力せんか、バカチンガー！");
+                    alert("名前を入力せんか、バカチンガー！"); //名前入力なしでalert
                     return;
                 }
                 startGame(playerName);
             });
 
+            //ENDボタンクリックでゲーム終了関数実行
             $("#endButton").click(function () {
                 endGame();
             });
 
-            $("#wordInput").keyup(function () {
-                if ($(this).val() === currentWord) {
+            //タイピングで実行
+            $("#wordInput").keypress(function () { //keyupからkeypressに修正！
+                if ($(this).val() === currentWord) { //正解=>スコア加算＆正解メッセージ＆次の問題出題
                     score++;
                     $("#scoreDisplay").text(`スコア: ${score}pt`);
-                    $("#message").text("Good!");
+                    $("#message").text("正解！いい感じ！");
                     showNewWord();
                 } else {
-                    $("#message").text("");
+                    $("#message").text("間違い！バカチン！"); //不正解=>間違いメッセージ
                 }
             });
 
+            //ランダムに問題表示関数
             function showNewWord() {
                 const randomIndex = Math.floor(Math.random() * words.length);
                 currentWord = words[randomIndex].word;
@@ -91,6 +113,7 @@
                 $("#wordInput").val('');
             }
 
+            //ゲーム開始時関数
             function startGame(playerName) {
                 score = 0;
                 timeRemaining = 60;
@@ -101,17 +124,18 @@
                 $("#playerName").prop('disabled', true);
                 $("#startButton").prop('disabled', true);
                 timer = setInterval(updateTimer, 1000);
-                showNewWord();
-                $('#gameMusic')[0].play();
+                showNewWord(); //１問目出題
+                $('#gameMusic')[0].play(); //バックミュージック開始
             }
 
+            //ゲーム終了時関数
             function endGame() {
                 clearInterval(timer);
                 const currentDate = new Date().toLocaleString();
                 const playerScore = { name: $("#playerName").val(), score: score, date: currentDate };
                 highScores.push(playerScore);
                 highScores.sort((a, b) => b.score - a.score);
-                localStorage.setItem('highScores', JSON.stringify(highScores));
+                localStorage.setItem('highScores', JSON.stringify(highScores)); //localStorageにスコアデータ保存
                 displayHighScores();
                 $("#wordInput").prop('disabled', true);
                 $("#endButton").prop('disabled', true);
@@ -124,6 +148,7 @@
                 $('#gameMusic')[0].currentTime = 0; // 再生位置を最初に戻す
             }
 
+            //タイマー関数
             function updateTimer() {
                 timeRemaining--;
                 let minutes = Math.floor(timeRemaining / 60);
@@ -134,6 +159,7 @@
                 }
             }
 
+            //歴代スコア順位表示関数
             function displayHighScores() {
                 let output = "<h3> バカチン<span>★</span>ランキング </h3>";
                 highScores.forEach((score, index) => {
@@ -142,14 +168,16 @@
                 $("#highScores").html(output);
             }
 
-             //ゲーム終了時のポップアップ表示関数
+            //ゲーム終了語のポップアップ表示関数
             function showGameOverPopup(rank) {
                 $("#finalScore").text(`スコア: ${score}pt`);
                 $("#playerRank").text(`ランキング: ${rank}位`);
-                $("#endImage").attr("src", "image\\timeup.png"); 
+                $("#endImage").attr("src", "image\\timeup.png");
                 $("#gameOverPopup").show();
             }
+
         });
+
     </script>
 
 </body>
